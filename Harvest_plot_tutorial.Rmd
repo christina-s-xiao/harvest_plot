@@ -26,7 +26,7 @@ Harvest plots have been defined by [Ogilvie et al., 2009](https://bmcmedresmetho
 
 The following tutorial is based on the harvest plot from the following publication: "Shifting towards healthier transport: carrots or sticks? Systematic review and meta-analysis of population-level interventions" [Xiao et al., 2022](https://www.thelancet.com/journals/lanplh/article/PIIS2542-5196(22)00220-0/fulltext)
 
-This study aimed to compare the effectiveness of carrot, stick, and combined carrot-and-stick interventions in changing different transport behaviors. We will use the same data to design a harvest plot for the driving and public transport outcomes.
+This study aimed to compare the effectiveness of carrot, stick, and combined carrot-and-stick interventions in changing different transport behaviors. We will use this data to design a harvest plot for driving and public transport outcomes.
 
 With this in mind, let's get plotting!
 
