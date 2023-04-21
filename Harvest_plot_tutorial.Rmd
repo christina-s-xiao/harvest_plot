@@ -29,7 +29,7 @@ The following tutorial is based on the harvest plot from the following publicati
 This study aimed to compare the effectiveness of carrot, stick, and combined carrot-and-stick interventions in changing different transport behaviors. We will use the same data to design a harvest plot for the driving and public transport outcomes.
 
 With this in mind, let's get plotting!
-<br>
+
 
 <br><br>
 
