@@ -94,10 +94,20 @@ knitr::kable(head(data))
 ***
 
 # Making changes to our variables
-### Reordering the change  variable
+
+## We need to change some of our variables to factors:
+```{r}
+names <- c('quality' ,'outcome_mode', 'change','stat_sig','cs_category')
+data[,names] <- lapply(data[,names] , factor)
+str(data)
+```
+
+### Reordering variables
 One of the changes we need to make is to reorder the change variable. Here, we're creating a new variable called **change_order**, which denotes a variable with the factored change variable ordered in the way we want it to appear in the harvest plot (Decrease, No change, Increase):
 ```{r}
 data$change_order <- factor(data$change, levels = c("Decrease", "No change", "Increase"))
+data$stat_sig <- factor(data$stat_sig, levels = c("Yes", "No", "N/A"))
+
 ```
 
 ### Creating a new variable converting study quality to a number representing the height of each bar
@@ -159,7 +169,7 @@ cbPalette <- c("#DCDCDC", "#A9A9A9", "#696969")
 We start building the harvest plot, specifying that the colour of each bar is represented by the variable **stat_significant**, the height of each bar by **quality_value**, and the position of each bar by **position**. We then add bars to represent each study.
 
 ```{r}
-drive_a<- ggplot(drive, aes(fill=stat_sig, y=quality_value, x=position, label = study_id)) + 
+drive_a<- ggplot(drive, aes(fill=stat_sig, y=quality_value, x=Position, label = study_id)) + 
   geom_bar(position="dodge", stat="identity") + scale_fill_manual(values=cbPalette, na.translate=FALSE) 
 ``` 
 
