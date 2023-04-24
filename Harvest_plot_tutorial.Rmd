@@ -1,5 +1,5 @@
 ---
-title: "Harvest plot tutorial"
+title: "Creating Harvest Plots in R"
 author: "Christina Xiao"
 date: "2023-04-05"
 output:
@@ -16,20 +16,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-Rich has made an edit.
-
-This RMarkdown document demonstrates how to create a harvest plot when there are multiple outcomes and exposures of interest within a systematic review. This helps to automate the plotting while allowing the user to change which dimensions are represented by different study characteristics.
-<br><br>
-Harvest plots have been defined by [Ogilvie et al., 2009](https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/1471-2288-8-8) as:
+In systematic reviews where meta-analysis is not possible, visualisations are important to show patterns in the data more efficiently than using text [(Cochrane Handbook).](https://training.cochrane.org/handbook/current/chapter-12#section-12-3) Harvest plots are one way to do this, they have been defined by [Ogilvie et al., 2009](https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/1471-2288-8-8) as:
 <br>
 
 >A novel and useful method for synthesising evidence about the differential effects of population-level interventions. It contributes to the challenge of making best use of all available evidence by incorporating all relevant data. The visual display assists both the process of synthesis and the assimilation of the findings. The method is suitable for adaptation to a variety of questions in evidence synthesis and may be particularly useful for systematic reviews addressing the broader type of research question which may be most relevant to policymakers.
 
 <br>
 
-The following tutorial is based on the harvest plot from the following publication: "Shifting towards healthier transport: carrots or sticks? Systematic review and meta-analysis of population-level interventions" [Xiao et al., 2022](https://www.thelancet.com/journals/lanplh/article/PIIS2542-5196(22)00220-0/fulltext)
+We aim to demonstrate how to create a simple harvest plot and how this can be extended where there are multiple outcomes and exposures of interest. Our examples come from "Shifting towards healthier transport: carrots or sticks? Systematic review and meta-analysis of population-level interventions" [Xiao et al., 2022](https://www.thelancet.com/journals/lanplh/article/PIIS2542-5196(22)00220-0/fulltext). This study aimed to compare the effectiveness of carrot, stick, and combined carrot-and-stick interventions in changing different transport behaviors. 
 
-This study aimed to compare the effectiveness of carrot, stick, and combined carrot-and-stick interventions in changing different transport behaviors. We will use this data to design a harvest plot for the driving and public transport outcomes.
+**maybe a sentence to say: "we do not discuss the choice of methods but only discuss the merits of Harvest plots where it's pertinant to creating the plot" no don't include** 
+
+**This helps to automate the plotting while allowing the user to change which dimensions are represented by different study characteristics.**
+<br><br>
 
 With this in mind, let's get plotting!
 
@@ -40,8 +39,8 @@ With this in mind, let's get plotting!
 # Setup
 Loading R packages
 ```{r message=FALSE, echo=FALSE}
-library(readxl)
 library(tidyverse)
+library(readxl)
 library(knitr)
 library(ggeffects)
 library(ggpubr)
@@ -63,7 +62,9 @@ library(ggpubr)
 
 # Load data
 ```{r message=FALSE, warning=FALSE}
-data <- read_excel("~/Library/CloudStorage/OneDrive-UniversityofCambridge/Carrots and sticks/Harvest plot/harvest_plot_tutorial_csreview.xlsx")
+#data <- read_excel("~/Library/CloudStorage/OneDrive-UniversityofCambridge/Carrots and sticks/Harvest plot/harvest_plot_tutorial_csreview.xlsx")
+data <- read_excel("harvest_plot_tutorial_csreview.xlsx")
+
 ```
 <br><br>
 
@@ -94,6 +95,9 @@ knitr::kable(head(data))
 ***
 
 # Making changes to our variables
+
+**RP comment: i wonder whether to just do this and save the data as a .Rdata file. We can incorporate variable type (factor etc.) in the list above. It would just allow us to focus on the important buts (i'm not 100% about this because this is clearly an immportant part of getting it to look right)**
+
 ### Reordering the change  variable
 One of the changes we need to make is to reorder the change variable. Here, we're creating a new variable called **change_order**, which denotes a variable with the factored change variable ordered in the way we want it to appear in the harvest plot (Decrease, No change, Increase):
 ```{r}
@@ -157,6 +161,22 @@ cbPalette <- c("#DCDCDC", "#A9A9A9", "#696969")
 ```
 
 We start building the harvest plot, specifying that the colour of each bar is represented by the variable **stat_significant**, the height of each bar by **quality_value**, and the position of each bar by **position**. We then add bars to represent each study.
+
+Could we start with a simpler version
+
+```{r}
+dc <- data[data$outcome_mode == 'Driving' & data$cs_category == 'Carrot' , ]
+
+ggplot(dc, aes(y=quality_value, x=position)) + geom_bar(stat="identity") +
+  facet_grid(cols = vars(change_order))
+
+
+#, switch = "y", space='free_x'
+#,position="dodge"
+
+#ggplot(drive, aes(fill=stat_sig, y=quality_value, x=position, label = study_id)) + 
+#  geom_bar(position="dodge", stat="identity") + scale_fill_manual(values=cbPalette, na.translate=FALSE) 
+```
 
 ```{r}
 drive_a<- ggplot(drive, aes(fill=stat_sig, y=quality_value, x=position, label = study_id)) + 
