@@ -70,29 +70,30 @@ df = tibble(
                    "Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
                    "Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
                    "No change","No change","No change","No change","No change",
-                   "No change", "Increase"),levels = c("Decrease", "No change", "Increase")) ,
+                   "No change", "Increase", "Increase", "Increase", "Increase",
+                   "Increase", "Increase", "Increase", "Increase"),
+                   levels = c("Decrease", "No change", "Increase")) ,
   stat_sig = factor(c("Yes","No","No","No","Yes","Yes","No","Yes","N/A","N/A","N/A",
                "N/A","N/A","N/A","N/A","N/A","N/A","N/A","N/A","N/A","No","N/A",
-               "No","No","N/A","N/A","N/A"), levels = c("Yes", "No", "N/A")),
+               "No","No","N/A","N/A","N/A","No","Yes","Yes","No","N/A","N/A","No"), 
+               levels = c("Yes", "No", "N/A")),
   quality = factor(c("high","high","high","high","moderate","moderate","moderate",
               "moderate","low","low","low","low","low","low","low","low","low",
-              "low","low","low","moderate","low","low","low","low","low","low"), 
+              "low","low","low","moderate","low","low","low","low","low","low","high",
+              "moderate","moderate","low","moderate","low","low"), 
               levels = c("low", "moderate", "high")),
-  n_interventions = c(1,1,1,2,3,3,4,1,1,1,1,1,1,1,1,1,1,2,2,1,4,1,1,1,1,1,1),
-  position = c(1,3,4,2,5,6,8,7,11,12,13,14,15,16,17,18,19,9,10,20,10,11,9,8,12,13,20))
-df
-
+  n_interventions = c(1,1,1,2,3,3,4,1,1,1,1,1,1,1,1,1,1,2,2,1,4,1,1,1,1,1,1,4,2,2,1,1,2,1),
+  position = c(1,3,4,2,5,6,8,7,11,12,13,14,15,16,17,18,19,9,10,20,10,11,9,8,12,13,20,19,18,
+               17,16,15,14,13))
 df$quality_value = as.numeric(df$quality)
 
 ```
-<br><br>
 
-***
-
-### Inspect data
+And this is what the data frame looks like:
 ```{r}
-knitr::kable(head(data))
+df
 ```
+
 <br><br>
 
 ***
@@ -115,30 +116,65 @@ The following defines each variable in the dataset, the first 6 rows of which ar
 
 
 
-***
+## Setting the position of bars representing each study
 
-# Making changes to our variables
+In the basic example above we manually set the position of the bars, using the variable **position**. Bars are positioned at the extremities of the facets (for decrease and increase) or in the middle (for no change). Within each facet, the bars are sorted by the characteristics plotted, in order of precedence. In this case bars were sorted by study quality, significant and number of intervention components. It is usual to sort initially by the same characteristic used to determine bar height.
 
-**If we manually input we don't need this here and even below for full plot, we could do this in advance and then just load a plot-ready .Rdata file. It would allow us to focus on the important bits (i'm not 100% about this because getting the data right is clearly an important part of getting it to look right)**
+This variable can be set manually as we did above, alternatively a function is provided below which might be useful.
 
-### Reordering the change  variable
-One of the changes we need to make is to reorder the change variable. Here, we're creating a new variable called **change_order**, which denotes a variable with the factored change variable ordered in the way we want it to appear in the harvest plot (Decrease, No change, Increase):
 ```{r}
-#data$change_order <- factor(data$change, levels = c("Decrease", "No change", "Increase"))
-```
+#sorting function
 
-### Creating a new variable converting study quality to a number representing the height of each bar
-We also need to create a new variable representing the heights of each of our bars. Here, because I want to vary the heights based on study quality, I will need to create a new variable where the tallest height represents the high quality studies, middle represents the moderate quality studies, and the shortest represents the low quality studies:
-```{r}
-#data <- data %>%
-  # mutate(quality_value = case_when(
-  #   quality == "high"   ~ 3,
-  #   quality == "moderate" ~ 2,
-  #   quality == "low"    ~ 1
-  # ))
-```
-<br><br>
 
+df = df %>%
+  group_by(change_order) %>%
+  arrange(desc(quality_value), stat_sig, desc(n_interventions), .by_group = TRUE)
+
+
+c = count(df, change_order, .drop = TRUE)
+
+n = max(c$n)
+
+for(i in 1:n){
+  
+  if(i == 1){
+    v = vector()
+    v[i] = floor(n/2)
+  }else{
+    if((i %% 2) == 0){
+      v[i] = v[i-1] + i-1
+    }else{
+      v[i] = v[i-1] -i+1
+    }
+  }
+  rm(i)
+}
+
+decrease_ord = as.vector(1:n)
+no_change_ord = v
+increase_ord = as.vector(n:1)
+
+
+l = list()
+for(i in 1:nrow(c)){
+  
+  if(c$change_order[i]=="Decrease"){
+    l[[i]] = decrease_ord[1:c$n[i]]
+  }
+  
+  if(c$change_order[i]=="No change"){
+    l[[i]] = no_change_ord[1:c$n[i]]
+  }
+  
+  if(c$change_order[i]=="Increase"){
+    l[[i]] = increase_ord[1:c$n[i]]
+  }
+}
+
+l = l[!c$n==0]
+df$position = unlist(l)
+
+```
 ***
 
 # Basic Harvest plot
@@ -154,6 +190,11 @@ Using the facet_grid option we disaggregate the studies based on their outcomes,
 
 We can add further data about the study or its findings to better visualise the nature of the evidence base.
 
+To set the colour scheme:
+```{r}
+cbPalette <- c("#264653","#2a9d8f","#f4a261")
+```
+
 ```{r}
 ggplot(df, aes(y=quality_value, x=position, fill = stat_sig)) + geom_bar(stat="identity") +
   facet_grid(cols = vars(change_order)) + scale_fill_manual(values=cbPalette) +
@@ -163,18 +204,25 @@ ggplot(df, aes(y=quality_value, x=position, fill = stat_sig)) + geom_bar(stat="i
 We can now see the statistical significance of the findings for each study (colour) and the number of intervention components (number about the bars). The most important characteristics will likely differ depending on the specific research question being addressed and reviewers can tailor the Harvest plots to their needs.
 
 ** we could include a prettier version without the grey background etc. or maybe save that for the more complete plot.**
+```{r}
+ggplot(df, aes(y=quality_value, x=position, fill = stat_sig)) + geom_bar(stat="identity") +
+  facet_grid(cols = vars(change_order)) + scale_fill_manual(values=cbPalette) +
+  guides(fill = guide_legend("Significant")) +
+  geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4) +  
+  theme(strip.placement = "outside")+ scale_y_continuous("", limits=c(0,3.5)) +
+  theme_minimal(base_size = 12) +
+  annotate("segment", x=-Inf, xend=Inf, y=-Inf, yend=-Inf) +
+  annotate("segment", x=-Inf, xend=-Inf, y=-Inf, yend=Inf) +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank())
+```
 
 ***
 
-## Setting the position of bars representing each study
-
-In the basic example above we manaully set the position of the bars, using the variable **position**. Bars are positioned at the extremities of the facets (for decrease and increase) or in the middle (for no change). Within each facet, the bars are sorted by the characteristics plotted, in order of precedence. In this case bars were sorted by study quality, significant and number of intervention components. It is usual to sort initially by the same characteristic used to determine bar height.
-
-This variable can be set manaually as we did above, alternatively a function is provided below which might be useful.
-
-```{r}
-#sorting function
-```
 
 
 ## Including more exposures
@@ -182,124 +230,6 @@ This variable can be set manaually as we did above, alternatively a function is 
 Where you can include the full dataset and a better looking plot.
 
 
-We need to also set the position of each of the bars. To do so, let's first assess how many studies are in each row and column:
-```{r}
-kable(table(drive$cs_category,drive$change_order))
-kable(table(public_transport$cs_category,public_transport$change_order))
-```
-<br>
-We can see here that the maximum number of studies is 20, as found in the table with Carrot interventions that were associated with a decrease in Driving outcomes.This means the study furthest to the right of the plot should be labelled with position 20, and those to the left of the plot will be labelled with position 1. 
-
-There are different ways to order the positions, for instance, by the height of each bar and then shading/colour. If you choose to add labels above each bar, e.g., representing the number of intervention components, then the bars can be ordered this way too. If you have not done so, create a new variable called **position** with your desired order.
-
-<br><br>
-
-***
-
-## Driving harvest plot
-The following code plots the harvest plot for the driving outcome.
-
-To set the colour scheme:
-```{r}
-cbPalette <- c("#DCDCDC", "#A9A9A9", "#696969")
-```
-
-We start building the harvest plot, specifying that the colour of each bar is represented by the variable **stat_significant**, the height of each bar by **quality_value**, and the position of each bar by **position**. We then add bars to represent each study.
-
-```{r}
-drive_a<- ggplot(drive, aes(fill=stat_sig, y=quality_value, x=position, label = study_id)) + 
-  geom_bar(position="dodge", stat="identity") + scale_fill_manual(values=cbPalette, na.translate=FALSE) 
-``` 
-
-Next, we use the facetgrid function to specify that we want **cs_category** as our rows and **change_order** as our columns.
-```{r}
-drive_b<- drive_a + facet_grid(cs_category~change_order,  
-   switch = "y", space='free_x') + theme_minimal(base_size = 12) 
-```   
-
-The following code formats the figure so it's easier to distinguish between the different rows and columns:
-```{r} 
-drive_c <- drive_b +  theme(strip.placement = "outside")+ scale_y_continuous("", limits=c(0,3.5)) +
-  theme(plot.title = element_text(size = 14, face = "bold"),
-        legend.title=element_text(size=12,  face = "bold"), 
-        legend.text=element_text(size=10)) +
-  annotate("segment", x=-Inf, xend=Inf, y=-Inf, yend=-Inf)+
-  annotate("segment", x=-Inf, xend=-Inf, y=-Inf, yend=Inf) +
-  theme(axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank()) + 
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), 
-        panel.background = element_blank())
-```
-
-Specifying the title and legends:
-```{r} 
-drive_d <- drive_c + guides(fill = guide_legend("Significant", reverse = TRUE, nrow = 3)) +
-  theme(legend.position="right") + labs(title="Driving")
-```
-
-Add the number of intervention components (**n_interventions**) above each bar:
-```{r} 
-drive_final <- drive_d +  geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4)
-
-```
-
-The final plot should look like this:
-```{r, fig.width=10,fig.height=6, warning=FALSE}
-drive_final
-```
-<br><br>
-
-***
-## Public transport harvest plot
-The following code plots the harvest plot for the public transport outcome.
-
-We start building the harvest plot, specifying that the colour of each bar is represented by the variable **stat_significant**, the height of each bar by **quality_value**, and the position of each bar by **position**. We then add bars to represent each study.
-
-```{r}
-pt_a<- ggplot(public_transport, aes(fill=stat_sig, y=quality_value, x=position, label = study_id)) + 
-  geom_bar(position="dodge", stat="identity") + scale_fill_manual(values=cbPalette, na.translate=FALSE) 
-``` 
-
-Next, we use the facetgrid function to specify that we want **cs_category** as our rows and **change_order** as our columns.
-```{r}
-pt_b<- pt_a + facet_grid(cs_category~change_order,  
-   switch = "y", space='free_x') + theme_minimal(base_size = 12) 
-```   
-
-The following code formats the figure so it's easier to distinguish between the different rows and columns:
-```{r} 
-pt_c <- pt_b +  theme(strip.placement = "outside")+ scale_y_continuous("", limits=c(0,3.5)) +
-  theme(plot.title = element_text(size = 14, face = "bold"),
-        legend.title=element_text(size=12,  face = "bold"), 
-        legend.text=element_text(size=10)) +
-  annotate("segment", x=-Inf, xend=Inf, y=-Inf, yend=-Inf)+
-  annotate("segment", x=-Inf, xend=-Inf, y=-Inf, yend=Inf) +
-  theme(axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank()) + 
-  theme(panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), 
-        panel.background = element_blank())
-```
-
-Specifying the title and legends:
-```{r} 
-pt_d <- pt_c + guides(fill = guide_legend("Significant", reverse = TRUE, nrow = 3)) +
-  theme(legend.position="right") + labs(title="Public transport")
-```
-
-Add the number of intervention components (**n_interventions**) above each bar:
-```{r} 
-pt_final <- pt_d +  geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4)
-```
-
-The final plot should look like this:
-```{r, fig.width=10,fig.height=6, warning=FALSE}
-pt_final
-```
-<br><br>
 
 ***
 
