@@ -16,18 +16,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-In systematic reviews where meta-analysis is not possible, visualisations are important to show patterns in the data more efficiently than using text [(Cochrane Handbook).](https://training.cochrane.org/handbook/current/chapter-12#section-12-3) Harvest plots are one way to do this, they have been defined by [Ogilvie et al., 2009](https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/1471-2288-8-8) as:
+Visualisations are an important way for systematic reviews identify and demonstrate patterns in the reviewed literature. These are often more efficient and effective than using text, especially where meta-analysis is not possible [(Cochrane Handbook)](https://training.cochrane.org/handbook/current/chapter-12#section-12-3). Harvest plots are one way to do this, they have been defined by [Ogilvie et al., 2009](https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/1471-2288-8-8) as:
 <br>
 
 >A novel and useful method for synthesising evidence about the differential effects of population-level interventions. It contributes to the challenge of making best use of all available evidence by incorporating all relevant data. The visual display assists both the process of synthesis and the assimilation of the findings. The method is suitable for adaptation to a variety of questions in evidence synthesis and may be particularly useful for systematic reviews addressing the broader type of research question which may be most relevant to policymakers.
 
 <br>
 
-We aim to demonstrate how to create a simple harvest plot and how this can be extended where there are multiple outcomes and exposures of interest. Our examples come from "Shifting towards healthier transport: carrots or sticks? Systematic review and meta-analysis of population-level interventions" [Xiao et al., 2022](https://www.thelancet.com/journals/lanplh/article/PIIS2542-5196(22)00220-0/fulltext). This study aimed to compare the effectiveness of carrot, stick, and combined carrot-and-stick interventions in changing different transport behaviors. 
-
-**maybe a sentence to say: "we do not discuss the choice of methods but only discuss the merits of Harvest plots where it's pertinant to creating the plot" no don't include** 
-
-**This helps to automate the plotting while allowing the user to change which dimensions are represented by different study characteristics.**
+We aim to demonstrate how to create a simple harvest plot using R and how this can be extended where there are multiple outcomes and exposures of interest. Our examples come from "Shifting towards healthier transport: carrots or sticks? Systematic review and meta-analysis of population-level interventions" [Xiao et al., 2022](https://www.thelancet.com/journals/lanplh/article/PIIS2542-5196(22)00220-0/fulltext). This study aimed to compare the effectiveness of carrot, stick, and combined carrot-and-stick interventions in changing different transport behaviors. 
 <br><br>
 
 With this in mind, let's get plotting!
@@ -61,16 +57,49 @@ library(ggpubr)
 ***
 
 # Load data
+
+**How do you feel about manual data for an initial small example. I think its likely to be easier for an inexperience person (and i'm not sure how we'd share the proper data)**
+
 ```{r message=FALSE, warning=FALSE}
 #data <- read_excel("~/Library/CloudStorage/OneDrive-UniversityofCambridge/Carrots and sticks/Harvest plot/harvest_plot_tutorial_csreview.xlsx")
-data <- read_excel("harvest_plot_tutorial_csreview.xlsx")
+#data <- read_excel("harvest_plot_tutorial_csreview.xlsx")
+
+df = tibble(
+  change_order = factor(c("Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
+                   "Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
+                   "Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
+                   "Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
+                   "No change","No change","No change","No change","No change",
+                   "No change", "Increase"),levels = c("Decrease", "No change", "Increase")) ,
+  stat_sig = factor(c("Yes","No","No","No","Yes","Yes","No","Yes","N/A","N/A","N/A",
+               "N/A","N/A","N/A","N/A","N/A","N/A","N/A","N/A","N/A","No","N/A",
+               "No","No","N/A","N/A","N/A"), levels = c("Yes", "No", "N/A")),
+  quality = factor(c("high","high","high","high","moderate","moderate","moderate",
+              "moderate","low","low","low","low","low","low","low","low","low",
+              "low","low","low","moderate","low","low","low","low","low","low"), 
+              levels = c("low", "moderate", "high")),
+  n_interventions = c(1,1,1,2,3,3,4,1,1,1,1,1,1,1,1,1,1,2,2,1,4,1,1,1,1,1,1),
+  position = c(1,3,4,2,5,6,8,7,11,12,13,14,15,16,17,18,19,9,10,20,10,11,9,8,12,13,20))
+df
+
+df$quality_value = as.numeric(df$quality)
 
 ```
 <br><br>
 
 ***
 
+### Inspect data
+```{r}
+knitr::kable(head(data))
+```
+<br><br>
+
+***
+
 ## Defining variables 
+
+**might need modification**
 
 The following defines each variable in the dataset, the first 6 rows of which are displayed using the head function.
 
@@ -84,60 +113,75 @@ The following defines each variable in the dataset, the first 6 rows of which ar
 - **n_interventions**: The number of intervention components, as represented by a number above each bar<br>
 <br><br>
 
-***
 
-### Inspect data
-```{r}
-knitr::kable(head(data))
-```
-<br><br>
 
 ***
 
 # Making changes to our variables
 
-**RP comment: i wonder whether to just do this and save the data as a .Rdata file. We can incorporate variable type (factor etc.) in the list above. It would just allow us to focus on the important buts (i'm not 100% about this because this is clearly an immportant part of getting it to look right)**
+**If we manually input we don't need this here and even below for full plot, we could do this in advance and then just load a plot-ready .Rdata file. It would allow us to focus on the important bits (i'm not 100% about this because getting the data right is clearly an important part of getting it to look right)**
 
 ### Reordering the change  variable
 One of the changes we need to make is to reorder the change variable. Here, we're creating a new variable called **change_order**, which denotes a variable with the factored change variable ordered in the way we want it to appear in the harvest plot (Decrease, No change, Increase):
 ```{r}
-data$change_order <- factor(data$change, levels = c("Decrease", "No change", "Increase"))
+#data$change_order <- factor(data$change, levels = c("Decrease", "No change", "Increase"))
 ```
 
 ### Creating a new variable converting study quality to a number representing the height of each bar
 We also need to create a new variable representing the heights of each of our bars. Here, because I want to vary the heights based on study quality, I will need to create a new variable where the tallest height represents the high quality studies, middle represents the moderate quality studies, and the shortest represents the low quality studies:
 ```{r}
-data <- data %>%
-  mutate(quality_value = case_when(
-    quality == "high"   ~ 3,
-    quality == "moderate" ~ 2,
-    quality == "low"    ~ 1
-  ))
+#data <- data %>%
+  # mutate(quality_value = case_when(
+  #   quality == "high"   ~ 3,
+  #   quality == "moderate" ~ 2,
+  #   quality == "low"    ~ 1
+  # ))
 ```
 <br><br>
 
 ***
 
-## Creating separate plots for each outcome
+# Basic Harvest plot
 
-First, we will plot the harvest plot for driving outcomes, which we will later combine with the public transport outcomes in a separate figure. To do so, we create two new datasets called 'drive' and 'public_transport'.
+The data allow us to visualise the evidence to support a change in travel mode as a result of an intervention, in addition to several additional characteristics of the studies and their outcomes. Initially we create a plot that conveys the relative evidence for a decrease, increase or no change in travel, along with the study quality.
 
 ```{r}
-drive <- data[data$outcome_mode == 'Driving', ]
-public_transport <- data[data$outcome_mode == 'Public transport', ]
+ggplot(df, aes(y=quality_value, x=position)) + geom_bar(stat="identity") +
+  facet_grid(cols = vars(change_order)) 
 ```
 
-Next, we do the same for the intervention categories of interest that we want to compare, which will represent the different rows in the figure. In this example, these are carrot, carrot and stick, and stick interventions:
+Using the facet_grid option we disaggregate the studies based on their outcomes, allowing us to see the amount of studies supporting each finding. The height of the bars indicates study quality facilitate a comparison of the strength of evidence for each finding. 
+
+We can add further data about the study or its findings to better visualise the nature of the evidence base.
+
 ```{r}
-carrot <-data[data$cs_category == 'Carrot', ]
-carrotandstick <-data[data$cs_category == 'Carrot and stick', ]
-stick <-data[data$cs_category == 'Stick', ]
+ggplot(df, aes(y=quality_value, x=position, fill = stat_sig)) + geom_bar(stat="identity") +
+  facet_grid(cols = vars(change_order)) + scale_fill_manual(values=cbPalette) +
+  guides(fill = guide_legend("Significant")) +
+  geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4)
 ```
-<br><br>
+We can now see the statistical significance of the findings for each study (colour) and the number of intervention components (number about the bars). The most important characteristics will likely differ depending on the specific research question being addressed and reviewers can tailor the Harvest plots to their needs.
+
+** we could include a prettier version without the grey background etc. or maybe save that for the more complete plot.**
 
 ***
 
 ## Setting the position of bars representing each study
+
+In the basic example above we manaully set the position of the bars, using the variable **position**. Bars are positioned at the extremities of the facets (for decrease and increase) or in the middle (for no change). Within each facet, the bars are sorted by the characteristics plotted, in order of precedence. In this case bars were sorted by study quality, significant and number of intervention components. It is usual to sort initially by the same characteristic used to determine bar height.
+
+This variable can be set manaually as we did above, alternatively a function is provided below which might be useful.
+
+```{r}
+#sorting function
+```
+
+
+## Including more exposures
+
+Where you can include the full dataset and a better looking plot.
+
+
 We need to also set the position of each of the bars. To do so, let's first assess how many studies are in each row and column:
 ```{r}
 kable(table(drive$cs_category,drive$change_order))
@@ -161,22 +205,6 @@ cbPalette <- c("#DCDCDC", "#A9A9A9", "#696969")
 ```
 
 We start building the harvest plot, specifying that the colour of each bar is represented by the variable **stat_significant**, the height of each bar by **quality_value**, and the position of each bar by **position**. We then add bars to represent each study.
-
-Could we start with a simpler version
-
-```{r}
-dc <- data[data$outcome_mode == 'Driving' & data$cs_category == 'Carrot' , ]
-
-ggplot(dc, aes(y=quality_value, x=position)) + geom_bar(stat="identity") +
-  facet_grid(cols = vars(change_order))
-
-
-#, switch = "y", space='free_x'
-#,position="dodge"
-
-#ggplot(drive, aes(fill=stat_sig, y=quality_value, x=position, label = study_id)) + 
-#  geom_bar(position="dodge", stat="identity") + scale_fill_manual(values=cbPalette, na.translate=FALSE) 
-```
 
 ```{r}
 drive_a<- ggplot(drive, aes(fill=stat_sig, y=quality_value, x=position, label = study_id)) + 
