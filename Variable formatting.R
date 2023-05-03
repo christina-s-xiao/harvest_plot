@@ -15,4 +15,5 @@ data2$direction_effect<-factor((data2$direction_effect), levels = c("Decrease", 
 data2$cs_category<-factor((data2$cs_category), levels = c("Carrot", "Carrot and stick", "Stick"))
 
 # Saving the file as an RDS file
-saveRDS(object, file = "my_data.rds")
+saveRDS(data2, file = "harvest_plot_data.rds")
+my_data<-readRDS(file = "harvest_plot_data.rds") # Read the new RDS file
