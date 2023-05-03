@@ -1,14 +1,14 @@
 ---
 title: "Creating Harvest Plots in R"
-author: "Christina Xiao"
+author: "Christina Xiao and Richard Patterson"
 date: "2023-04-05"
 output:
   prettydoc::html_pretty:
     theme: cayman
+    toc: true
 ---
 
 ***
-<br><br>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -33,19 +33,9 @@ With this in mind, let's get plotting!
 ***
 
 # Setup
-Loading R packages
-```{r message=FALSE, echo=FALSE}
-library(tidyverse)
-library(readxl)
-library(knitr)
-library(ggeffects)
-library(ggpubr)
-library(gtsummary)
-library(flextable)
-library(janitor)
-```
 
-
+## Load R Packages
+Load the relevant packages:
 ```{r message=FALSE, warning=FALSE}
 library(readxl)
 library(tidyverse)
@@ -56,16 +46,12 @@ library(ggpubr)
 
 ***
 
-# Load data
+## Load data
 
-**How do you feel about manual data for an initial small example. I think its likely to be easier for an inexperience person (and i'm not sure how we'd share the proper data)**
-
+We first start using the following dataset to create our simple version of the harvest plot.
 ```{r message=FALSE, warning=FALSE}
-#data <- read_excel("~/Library/CloudStorage/OneDrive-UniversityofCambridge/Carrots and sticks/Harvest plot/harvest_plot_tutorial_csreview.xlsx")
-#data <- read_excel("harvest_plot_tutorial_csreview.xlsx")
-
 df = tibble(
-  change_order = factor(c("Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
+  direction_effect = factor(c("Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
                    "Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
                    "Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
                    "Decrease", "Decrease", "Decrease", "Decrease", "Decrease",
@@ -83,55 +69,48 @@ df = tibble(
               "moderate","moderate","low","moderate","low","low"), 
               levels = c("low", "moderate", "high")),
   n_interventions = c(1,1,1,2,3,3,4,1,1,1,1,1,1,1,1,1,1,2,2,1,4,1,1,1,1,1,1,4,2,2,1,1,2,1),
-  position = c(1,3,4,2,5,6,8,7,11,12,13,14,15,16,17,18,19,9,10,20,10,11,9,8,12,13,20,19,18,
-               17,16,15,14,13))
-df$quality_value = as.numeric(df$quality)
+  position = c(1,3,4,2,5,6,8,7,11,12,13,14,15,16,17,18,19,9,10,20,10,11,9,8,12,13,13,20,19,
+               18,16,17,14,15))
+df$quality = as.numeric(df$quality)
 
 ```
 
 And this is what the data frame looks like:
 ```{r}
-df
+knitr::kable(head(df))
 ```
 
 <br><br>
 
 ***
 
-## Defining variables 
+### Defining variables 
 
-**might need modification**
+The following defines each variable in the simplified harvest plot dataset:
 
-The following defines each variable in the dataset, the first 6 rows of which are displayed using the head function.
-
-- **study_id**: Unique study identifier <br>
-- **position**: Placement of the individual study outcome in the harvest plot <br>
-- **outcome_mode**: Outcome of interest in your review. This can be a single outcome or many. Here, we are interested in looking at driving and public transport <br>
-- **cs_category**: Exposure or category of studies to be compared, which will be placed in separate rows<br>
-- **change**: Whether there was an increase, decrease, or no change in the outcome. <br>
-- **stat_sig**: Whether the difference was found to be statistically significant. This will be represented by the shading of the bars <br>
-- **quality**: Indicates the study quality. We have three categories here: low, moderate, and high. This will be represented by the height of the bars<br>
-- **n_interventions**: The number of intervention components, as represented by a number above each bar<br>
+- **position**: Numeric: Placement of the individual study outcome in the harvest plot <br>
+- **direction_effect**: Factor: Whether there was an increase, decrease, or no change in the outcome. <br>
+- **stat_sig**: Factor: Whether the difference was found to be statistically significant. This will be represented by the shading of the bars <br>
+- **quality**: Factor: Indicates the study quality. We have three categories here: low, moderate, and high. This will be represented by the height of the bars<br>
+- **n_interventions**: Numeric: The number of intervention components, as represented by a number above each bar<br>
 <br><br>
 
+***
 
 
-## Setting the position of bars representing each study
+# Setting the position of bars representing each study
 
 In the basic example above we manually set the position of the bars, using the variable **position**. Bars are positioned at the extremities of the facets (for decrease and increase) or in the middle (for no change). Within each facet, the bars are sorted by the characteristics plotted, in order of precedence. In this case bars were sorted by study quality, significant and number of intervention components. It is usual to sort initially by the same characteristic used to determine bar height.
 
 This variable can be set manually as we did above, alternatively a function is provided below which might be useful.
 
 ```{r}
-#sorting function
-
-
 df = df %>%
-  group_by(change_order) %>%
-  arrange(desc(quality_value), stat_sig, desc(n_interventions), .by_group = TRUE)
+  group_by(direction_effect) %>%
+  arrange(desc(quality), stat_sig, desc(n_interventions), .by_group = TRUE)
 
 
-c = count(df, change_order, .drop = TRUE)
+c = count(df, direction_effect, .drop = TRUE)
 
 n = max(c$n)
 
@@ -158,15 +137,15 @@ increase_ord = as.vector(n:1)
 l = list()
 for(i in 1:nrow(c)){
   
-  if(c$change_order[i]=="Decrease"){
+  if(c$direction_effect[i]=="Decrease"){
     l[[i]] = decrease_ord[1:c$n[i]]
   }
   
-  if(c$change_order[i]=="No change"){
+  if(c$direction_effect[i]=="No change"){
     l[[i]] = no_change_ord[1:c$n[i]]
   }
   
-  if(c$change_order[i]=="Increase"){
+  if(c$direction_effect[i]=="Increase"){
     l[[i]] = increase_ord[1:c$n[i]]
   }
 }
@@ -181,9 +160,9 @@ df$position = unlist(l)
 
 The data allow us to visualise the evidence to support a change in travel mode as a result of an intervention, in addition to several additional characteristics of the studies and their outcomes. Initially we create a plot that conveys the relative evidence for a decrease, increase or no change in travel, along with the study quality.
 
-```{r}
-ggplot(df, aes(y=quality_value, x=position)) + geom_bar(stat="identity") +
-  facet_grid(cols = vars(change_order)) 
+```{r, fig.width=10,fig.height=3, warning=FALSE}
+ggplot(df, aes(y=quality, x=position)) + geom_bar(stat="identity") +
+  facet_grid(cols = vars(direction_effect)) 
 ```
 
 Using the facet_grid option we disaggregate the studies based on their outcomes, allowing us to see the amount of studies supporting each finding. The height of the bars indicates study quality facilitate a comparison of the strength of evidence for each finding. 
@@ -195,18 +174,20 @@ To set the colour scheme:
 cbPalette <- c("#264653","#2a9d8f","#f4a261")
 ```
 
-```{r}
-ggplot(df, aes(y=quality_value, x=position, fill = stat_sig)) + geom_bar(stat="identity") +
-  facet_grid(cols = vars(change_order)) + scale_fill_manual(values=cbPalette) +
+Plotting the figure with colours and labels to further differentiate between studies:
+```{r, fig.width=10,fig.height=3, warning=FALSE}
+ggplot(df, aes(y=quality, x=position, fill = stat_sig)) + geom_bar(stat="identity") +
+  facet_grid(cols = vars(direction_effect)) + scale_fill_manual(values=cbPalette) +
   guides(fill = guide_legend("Significant")) +
   geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4)
 ```
+
 We can now see the statistical significance of the findings for each study (colour) and the number of intervention components (number about the bars). The most important characteristics will likely differ depending on the specific research question being addressed and reviewers can tailor the Harvest plots to their needs.
 
 ** we could include a prettier version without the grey background etc. or maybe save that for the more complete plot.**
-```{r}
-ggplot(df, aes(y=quality_value, x=position, fill = stat_sig)) + geom_bar(stat="identity") +
-  facet_grid(cols = vars(change_order)) + scale_fill_manual(values=cbPalette) +
+```{r, fig.width=10,fig.height=3, warning=FALSE}
+ggplot(df, aes(y=quality, x=position, fill = stat_sig)) + geom_bar(stat="identity") +
+  facet_grid(cols = vars(direction_effect)) + scale_fill_manual(values=cbPalette) +
   guides(fill = guide_legend("Significant")) +
   geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4) +  
   theme(strip.placement = "outside")+ scale_y_continuous("", limits=c(0,3.5)) +
@@ -225,15 +206,129 @@ ggplot(df, aes(y=quality_value, x=position, fill = stat_sig)) + geom_bar(stat="i
 
 
 
-## Including more exposures
+# Including more exposures
 
-Where you can include the full dataset and a better looking plot.
+If you have a dataset with more than one outcome and exposure, the following section provides guidance on how to create a harvest plot that would allow you to compare multiple outcomes and exposures.
+
+## Loading data
+First, we load the data:
+```{r}
+data_harvest<-readRDS(file = "harvest_plot_data.rds") # Read the RDS file
+```
+
+And this is what the new loaded dataset looks like:
+```{r}
+knitr::kable(head(data_harvest))
+data_harvest$quality = as.numeric(data_harvest$quality)
+
+```
+<br><br>
+Here, we have a few more variables, as defined below:
+
+- **study_id**: Unique study identifier <br>
+- **outcome_mode**: Outcome of interest in your review. This can be a single outcome or many. Here, we are interested in looking at driving and public transport <br>
+- **cs_category**: Exposure or category of studies to be compared, which will be placed in separate rows<br>
+<br><br>
 
 
+## Creating separate plots for each outcome
+
+First, we will plot the harvest plot for driving outcomes, which we will later combine with the public transport outcomes in a separate figure. To do so, we create two new datasets called 'drive' and 'public_transport'.
+
+```{r}
+drive <- data_harvest[data_harvest$outcome_mode == 'Driving', ]
+public_transport <- data_harvest[data_harvest$outcome_mode == 'Public transport', ]
+```
+
+
+### Driving harvest plot
+The following code plots the harvest plot for the driving outcome.
+
+To set the colour scheme:
+```{r}
+cbPalette <- c("#264653","#2a9d8f","#f4a261")
+```
+
+We start building the harvest plot, specifying that the colour of each bar is represented by the variable **stat_significant**, the height of each bar by **quality**, the number of interventions is labelled above each bar by **n_interventions**, and the position of each bar by **position**. We then add bars to represent each study.
+
+```{r}
+drive_a<- ggplot(drive, aes(fill=stat_sig, y=quality, x=position, label = study_id)) + 
+  geom_bar(position="dodge", stat="identity") +
+  facet_grid(cols = vars(direction_effect)) +
+  scale_fill_manual(values=cbPalette, na.translate=FALSE) +
+  geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4)
+``` 
+
+Next, we use the facetgrid function to specify that we want **cs_category** as our rows and **direction_effect** as our columns.
+```{r}
+drive_b<- drive_a + facet_grid(cs_category~direction_effect,  
+   switch = "y", space='free_x') + theme_minimal(base_size = 14) 
+```   
+
+The following code formats the figure so it's easier to distinguish between the different rows and columns:
+```{r} 
+drive_c <- drive_b +  theme(strip.placement = "outside")+ scale_y_continuous("", limits=c(0,3.5)) +
+  theme(plot.title = element_text(size = 14, face = "bold"),
+        legend.title=element_text(size=12,  face = "bold"), 
+        legend.text=element_text(size=10)) +
+  annotate("segment", x=-Inf, xend=Inf, y=-Inf, yend=-Inf) +
+  annotate("segment", x=-Inf, xend=-Inf, y=-Inf, yend=Inf) +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank())
+```
+
+Specifying the title and legends:
+```{r} 
+drive_final <- drive_c + guides(fill = guide_legend("Significant", nrow = 3)) +
+  theme(legend.position="right") + labs(title="Driving") 
+```
+
+The final plot should look like this:
+```{r, fig.width=10,fig.height=6, warning=FALSE}
+drive_final
+```
+<br><br>
+
+***
+### Public transport harvest plot
+Repeat the steps above for the public transport outcomes, as below:
+
+```{r}
+pt_final<- ggplot(public_transport, aes(fill=stat_sig, y=quality, x=position, label = study_id)) + 
+  geom_bar(position="dodge", stat="identity") + scale_fill_manual(values=cbPalette, na.translate=FALSE) +
+  geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4) +
+  facet_grid(cs_category~direction_effect,  
+   switch = "y", space='free_x') + theme_minimal(base_size = 12) +
+  theme(strip.placement = "outside")+ scale_y_continuous("", limits=c(0,3.5)) +
+  theme(plot.title = element_text(size = 14, face = "bold"),
+        legend.title=element_text(size=12,  face = "bold"), 
+        legend.text=element_text(size=10)) +
+  annotate("segment", x=-Inf, xend=Inf, y=-Inf, yend=-Inf)+
+  annotate("segment", x=-Inf, xend=-Inf, y=-Inf, yend=Inf) +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()) + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.background = element_blank()) +
+  guides(fill = guide_legend("Significant", nrow = 3)) +
+  theme(legend.position="right") + labs(title="Public transport")
+``` 
+
+
+The final plot should look like this:
+```{r, fig.width=10,fig.height=6, warning=FALSE}
+pt_final
+```
+<br><br>
 
 ***
 
-# Creating the final combined harvest plot
+## Creating the final combined harvest plot
 We then use the ggarrange function to plot both the Driving and Public transport harvest plot figures together:
 ```{r, fig.width=10,fig.height=12}
 figure <- ggarrange(drive_final, pt_final, hjust = -0.5,
