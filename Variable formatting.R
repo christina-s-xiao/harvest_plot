@@ -13,7 +13,7 @@ data2$stat_sig<-factor((data2$stat_sig), levels = c("Yes", "No", "N/A"))
 data2$quality<-factor((data2$quality), levels = c("low", "moderate", "high"))
 data2$direction_effect<-factor((data2$direction_effect), levels = c("Decrease", "No change", "Increase"))
 data2$cs_category<-factor((data2$cs_category), levels = c("Carrot", "Carrot and stick", "Stick"))
-data2$quality_num<-as.numeric(data2$quality)
+data2$quality<-as.numeric(data2$quality)
 
 
 
