@@ -88,11 +88,11 @@ knitr::kable(head(df))
 
 The following defines each variable in the simplified harvest plot dataset:
 
-- **position**: Numeric: Placement of the individual study outcome in the harvest plot <br>
-- **direction_effect**: Factor: Whether there was an increase, decrease, or no change in the outcome. <br>
-- **stat_sig**: Factor: Whether the difference was found to be statistically significant. This will be represented by the shading of the bars <br>
-- **quality**: Factor: Indicates the study quality. We have three categories here: low, moderate, and high. This will be represented by the height of the bars<br>
-- **n_interventions**: Numeric: The number of intervention components, as represented by a number above each bar<br>
+- **position**: (Numeric) Placement of the individual study outcome in the harvest plot <br>
+- **direction_effect**: (Factor) Whether there was an increase, decrease, or no change in the outcome. <br>
+- **stat_sig**: (Factor) Whether the difference was found to be statistically significant. This will be represented by the shading of the bars <br>
+- **quality**: (Numeric) Indicates the study quality. We have three categories here: low, moderate, and high, which was converted into a numeric variable (1 = low, 2 = moderate, 3 = high). This will be represented by the height of the bars<br>
+- **n_interventions**: (Numeric) The number of intervention components, as represented by a number above each bar<br>
 <br><br>
 
 ***
@@ -213,14 +213,12 @@ If you have a dataset with more than one outcome and exposure, the following sec
 ## Loading data
 First, we load the data:
 ```{r}
-data_harvest<-readRDS(file = "harvest_plot_data.rds") # Read the RDS file
+data_harvest <- readRDS(url("https://github.com/christina-s-xiao/harvest_plot/raw/revise/harvest_plot_data.rds"))
 ```
 
 And this is what the new loaded dataset looks like:
 ```{r}
 knitr::kable(head(data_harvest))
-data_harvest$quality = as.numeric(data_harvest$quality)
-
 ```
 <br><br>
 Here, we have a few more variables, as defined below:
