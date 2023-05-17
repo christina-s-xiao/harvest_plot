@@ -171,7 +171,7 @@ We can add further data about the study or its findings to better visualise the 
 
 To set the colour scheme:
 ```{r}
-cbPalette <- c("#264653","#2a9d8f","#f4a261")
+cbPalette <- c("#A9C5D0","#FFB7B0","#ADA7A7")
 ```
 
 Plotting the figure with colours and labels to further differentiate between studies:
@@ -242,22 +242,16 @@ public_transport <- data_harvest[data_harvest$outcome_mode == 'Public transport'
 ### Driving harvest plot
 The following code plots the harvest plot for the driving outcome.
 
-To set the colour scheme:
-```{r}
-cbPalette <- c("#264653","#2a9d8f","#f4a261")
-```
-
 We start building the harvest plot, specifying that the colour of each bar is represented by the variable **stat_significant**, the height of each bar by **quality**, the number of interventions is labelled above each bar by **n_interventions**, and the position of each bar by **position**. We then add bars to represent each study.
 
 ```{r}
 drive_a<- ggplot(drive, aes(fill=stat_sig, y=quality, x=position, label = study_id)) + 
-  geom_bar(position="dodge", stat="identity") +
-  facet_grid(cols = vars(direction_effect)) +
-  scale_fill_manual(values=cbPalette, na.translate=FALSE) +
-  geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4)
+  geom_bar(position="dodge", stat="identity") + # Adding bars to the plot
+  scale_fill_manual(values=cbPalette, na.translate=FALSE) + # Adding colours to the bars
+  geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4) # Adding annotated number of interventions above each bar
 ``` 
 
-Next, we use the facetgrid function to specify that we want **cs_category** as our rows and **direction_effect** as our columns.
+Next, we use the **facetgrid** function to specify that we want **cs_category** as our rows and **direction_effect** as our columns.
 ```{r}
 drive_b<- drive_a + facet_grid(cs_category~direction_effect,  
    switch = "y", space='free_x') + theme_minimal(base_size = 14) 
@@ -265,7 +259,8 @@ drive_b<- drive_a + facet_grid(cs_category~direction_effect,
 
 The following code formats the figure so it's easier to distinguish between the different rows and columns:
 ```{r} 
-drive_c <- drive_b +  theme(strip.placement = "outside")+ scale_y_continuous("", limits=c(0,3.5)) +
+drive_c <- drive_b +  theme(strip.placement = "outside") + 
+  scale_y_continuous("", limits=c(0,3.5)) +
   theme(plot.title = element_text(size = 14, face = "bold"),
         legend.title=element_text(size=12,  face = "bold"), 
         legend.text=element_text(size=10)) +
@@ -329,7 +324,6 @@ pt_final
 ## Creating the final combined harvest plot
 We then use the ggarrange function to plot both the Driving and Public transport harvest plot figures together:
 ```{r, fig.width=10,fig.height=12}
-figure <- ggarrange(drive_final, pt_final, hjust = -0.5,
-                    ncol = 1, nrow = 2)
-figure
+ggarrange(drive_final, pt_final, hjust = -0.5,
+                    ncol = 1, nrow = 2, common.legend = TRUE, legend='right')
 ```
