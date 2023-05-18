@@ -16,15 +16,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-Visualisations are an important way for systematic reviews identify and demonstrate patterns in the reviewed literature. These are often more efficient and effective than using text, especially where meta-analysis is not possible [(Cochrane Handbook)](https://training.cochrane.org/handbook/current/chapter-12#section-12-3). Harvest plots are one way to do this, they have been defined by [Ogilvie et al., 2009](https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/1471-2288-8-8) as:
+Visualisations are an important tool in systematic reviews for identifying, demonstrating, and investigating patterns in the reviewed literature. These are often more efficient and effective than using text, especially where meta-analysis is not possible [(Cochrane Handbook)](https://training.cochrane.org/handbook/current/chapter-12#section-12-3). Harvest plots are one way to do this and have been defined by [Ogilvie et al., 2008](https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/1471-2288-8-8) as:
 <br>
 
 >A novel and useful method for synthesising evidence about the differential effects of population-level interventions. It contributes to the challenge of making best use of all available evidence by incorporating all relevant data. The visual display assists both the process of synthesis and the assimilation of the findings. The method is suitable for adaptation to a variety of questions in evidence synthesis and may be particularly useful for systematic reviews addressing the broader type of research question which may be most relevant to policymakers.
 
-<br>
 
-We aim to demonstrate how to create a simple harvest plot using R and how this can be extended where there are multiple outcomes and exposures of interest. Our examples come from "Shifting towards healthier transport: carrots or sticks? Systematic review and meta-analysis of population-level interventions" [Xiao et al., 2022](https://www.thelancet.com/journals/lanplh/article/PIIS2542-5196(22)00220-0/fulltext). This study aimed to compare the effectiveness of carrot, stick, and combined carrot-and-stick interventions in changing different transport behaviors. 
-<br><br>
+We aim to demonstrate how to create a simple harvest plot using R and how this can be extended where there are multiple outcomes and exposures of interest. Our examples come from "Shifting towards healthier transport: carrots or sticks? Systematic review and meta-analysis of population-level interventions" [(Xiao et al., 2022)](https://www.thelancet.com/journals/lanplh/article/PIIS2542-5196(22)00220-0/fulltext). This study aimed to compare the effectiveness of carrot, stick, and combined carrot-and-stick interventions in changing different transport behaviors. 
+
+
 
 With this in mind, let's get plotting!
 
@@ -89,9 +89,9 @@ knitr::kable(head(df))
 The following defines each variable in the simplified harvest plot dataset:
 
 - **position**: (Numeric) Placement of the individual study outcome in the harvest plot <br>
-- **direction_effect**: (Factor) Whether there was an increase, decrease, or no change in the outcome. <br>
+- **direction_effect**: (Factor) Whether there was an increase, decrease, or no change in the outcome <br>
 - **stat_sig**: (Factor) Whether the difference was found to be statistically significant. This will be represented by the shading of the bars <br>
-- **quality**: (Numeric) Indicates the study quality. We have three categories here: low, moderate, and high, which was converted into a numeric variable (1 = low, 2 = moderate, 3 = high). This will be represented by the height of the bars<br>
+- **quality**: (Numeric) Indicates the study quality. We have three categories here: low, moderate, and high, converted into a numeric variable (1 = low, 2 = moderate, 3 = high). This will be represented by the height of the bars<br>
 - **n_interventions**: (Numeric) The number of intervention components, as represented by a number above each bar<br>
 <br><br>
 
@@ -102,12 +102,12 @@ The following defines each variable in the simplified harvest plot dataset:
 
 In the basic example above we manually set the position of the bars, using the variable **position**. Bars are positioned at the extremities of the facets (for decrease and increase) or in the middle (for no change). Within each facet, the bars are sorted by the characteristics plotted, in order of precedence. In this case bars were sorted by study quality, significant and number of intervention components. It is usual to sort initially by the same characteristic used to determine bar height.
 
-This variable can be set manually as we did above, alternatively a function is provided below which might be useful.
+An alternative to setting this variable manually is to implement the function provided below, which might be useful.
 
 ```{r}
 df = df %>%
   group_by(direction_effect) %>%
-  arrange(desc(quality), stat_sig, desc(n_interventions), .by_group = TRUE)
+  arrange(desc(quality), stat_sig, desc(n_interventions), .by_group = TRUE) # Remember to change the variables quality, stat_sig, and n_interventions if you are categorising interventions differently.
 
 
 c = count(df, direction_effect, .drop = TRUE)
@@ -156,18 +156,18 @@ df$position = unlist(l)
 ```
 ***
 
-# Basic Harvest plot
+# Basic harvest plot
 
-The data allow us to visualise the evidence to support a change in travel mode as a result of an intervention, in addition to several additional characteristics of the studies and their outcomes. Initially we create a plot that conveys the relative evidence for a decrease, increase or no change in travel, along with the study quality.
+The data allow us to visualise the evidence to support each of three competing hypotheses about a change in travel mode as a result of an intervention, in addition to several additional characteristics of the studies and their outcomes. Initially we create a plot that conveys the evidence consistent with a decrease, increase or no change in travel, along with the study quality.
 
 ```{r, fig.width=10,fig.height=3, warning=FALSE}
 ggplot(df, aes(y=quality, x=position)) + geom_bar(stat="identity") +
   facet_grid(cols = vars(direction_effect)) 
 ```
 
-Using the facet_grid option we disaggregate the studies based on their outcomes, allowing us to see the amount of studies supporting each finding. The height of the bars indicates study quality facilitate a comparison of the strength of evidence for each finding. 
+Using the *facet_grid* option we disaggregate the studies based on their outcomes, allowing us to see the number of studies supporting each finding. The height of the bars indicating study quality facilitates a comparison of the strength of evidence for each finding.
 
-We can add further data about the study or its findings to better visualise the nature of the evidence base.
+We can add further data about each study or its findings to better visualise the nature of the evidence base.
 
 To set the colour scheme:
 ```{r}
@@ -175,16 +175,17 @@ cbPalette <- c("#A9C5D0","#FFB7B0","#ADA7A7")
 ```
 
 Plotting the figure with colours and labels to further differentiate between studies:
-```{r, fig.width=10,fig.height=3, warning=FALSE}
+```{r, fig.width=10,fig.height=4, warning=FALSE}
 ggplot(df, aes(y=quality, x=position, fill = stat_sig)) + geom_bar(stat="identity") +
   facet_grid(cols = vars(direction_effect)) + scale_fill_manual(values=cbPalette) +
   guides(fill = guide_legend("Significant")) +
   geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4)
 ```
 
-We can now see the statistical significance of the findings for each study (colour) and the number of intervention components (number about the bars). The most important characteristics will likely differ depending on the specific research question being addressed and reviewers can tailor the Harvest plots to their needs.
+We can now see the statistical significance of the findings for each study (colour) and the number of intervention components (number above each bar). The most important characteristics will likely differ depending on the specific research question being addressed, and reviewers can tailor the harvest plots to their needs.
 
-** we could include a prettier version without the grey background etc. or maybe save that for the more complete plot.**
+The following code makes it easier to distinguish between the bars and the background.
+
 ```{r, fig.width=10,fig.height=3, warning=FALSE}
 ggplot(df, aes(y=quality, x=position, fill = stat_sig)) + geom_bar(stat="identity") +
   facet_grid(cols = vars(direction_effect)) + scale_fill_manual(values=cbPalette) +
@@ -251,7 +252,7 @@ drive_a<- ggplot(drive, aes(fill=stat_sig, y=quality, x=position, label = study_
   geom_text(aes(label=n_interventions), position=position_dodge(width=0.9), vjust=-0.4) # Adding annotated number of interventions above each bar
 ``` 
 
-Next, we use the **facetgrid** function to specify that we want **cs_category** as our rows and **direction_effect** as our columns.
+Next, we use the *facet_grid* option to specify that we want **cs_category** as our rows and **direction_effect** as our columns.
 ```{r}
 drive_b<- drive_a + facet_grid(cs_category~direction_effect,  
    switch = "y", space='free_x') + theme_minimal(base_size = 14) 
@@ -322,7 +323,8 @@ pt_final
 ***
 
 ## Creating the final combined harvest plot
-We then use the ggarrange function to plot both the Driving and Public transport harvest plot figures together:
+We then use the ggarrange function to plot both the driving and public transport harvest plot figures together:
+
 ```{r, fig.width=10,fig.height=12}
 ggarrange(drive_final, pt_final, hjust = -0.5,
                     ncol = 1, nrow = 2, common.legend = TRUE, legend='right')
