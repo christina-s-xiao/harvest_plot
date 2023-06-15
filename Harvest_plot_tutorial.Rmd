@@ -101,26 +101,26 @@ An alternative to setting this variable manually is to implement the function pr
 
 ```{r}
 df = df %>%
-  group_by(direction_effect) %>% # group by column variable (and row variables if you're using them)
-  arrange(desc(quality), desc(stat_sig), desc(n_interventions), .by_group = TRUE) # sort by quality measures in order of precedence
+  group_by(direction_effect) %>% # group by direction of effect
+  arrange(desc(quality), desc(stat_sig), desc(n_interventions), .by_group = TRUE) # sort by quality, statistical significance, and number of intervention measures in order of precedence
 
 c = count(df, direction_effect, .drop = TRUE) # count the number of studies in each group
 
 n = max(c$n) # number of studies in the groups with the most studies
 
-v = c(0, rep(1:n, each = 2, length.out = n-1)) * c(-1, 1) + floor(n/2) # creates a position vector starting in the middle and working out
+v = c(0, rep(1:n, each = 2, length.out = n-1)) * c(-1, 1) + floor(n/2) # creates a position vector starting in the middle and working out for the middle "No change" column
 
 c = left_join(c,
               tibble(
                 direction_effect = c("Decrease", "No change" ,"Increase"),
                 order = list(seq_len(n),
                              v[seq_len(n)],
-                             seq(n,1, -1)))
+                             seq(n,1,-1)))
 ) # joins the correct position vector to each group
 
 l = lapply(seq_len(nrow(c)), function(x) c$order[[x]][seq_len(c$n[x])]) # collect the position vector for each group
 
-df$position = unlist(l) # add these are a variable to the dataset
+df$position = unlist(l) # add the new position variable to the dataset
 
 ```
 ***
