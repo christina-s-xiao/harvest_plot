@@ -95,34 +95,9 @@ The following defines each variable in the simplified harvest plot dataset:
 
 # Setting the position of bars representing each study
 
-In the basic example above we manually set the position of the bars, using the variable **position**. Bars are positioned at the extremities of the facets (for decrease and increase) or in the middle (for no change). Within each facet, the bars are sorted by the characteristics plotted, in order of precedence. In this case bars were sorted by study quality, significant and number of intervention components. It is usual to sort initially by the same characteristic used to determine bar height.
+For this basic example, we manually set the position of the bars using the variable **position**. Bars are positioned at the extremities of the facets (for decrease and increase) or in the middle (for no change). Within each facet, the bars are sorted by the characteristics plotted, in order of precedence. In this case bars were sorted by study quality, significant and number of intervention components. It is usual to sort initially by the same characteristic used to determine bar height. If this doesn't immediately make sense, hopefully the examples below will illustrate how the position of the bars in the three columns.
 
-An alternative to setting this variable manually is to implement the function provided below, which might be useful.
 
-```{r}
-df = df %>%
-  group_by(direction_effect) %>% # group by direction of effect
-  arrange(desc(quality), desc(stat_sig), desc(n_interventions), .by_group = TRUE) # sort by quality, statistical significance, and number of intervention measures in order of precedence
-
-c = count(df, direction_effect, .drop = TRUE) # count the number of studies in each group
-
-n = max(c$n) # number of studies in the groups with the most studies
-
-v = c(0, rep(1:n, each = 2, length.out = n-1)) * c(-1, 1) + floor(n/2) # creates a position vector starting in the middle and working out for the middle "No change" column
-
-c = left_join(c,
-              tibble(
-                direction_effect = c("Decrease", "No change" ,"Increase"),
-                order = list(seq_len(n),
-                             v[seq_len(n)],
-                             seq(n,1,-1)))
-) # joins the correct position vector to each group
-
-l = lapply(seq_len(nrow(c)), function(x) c$order[[x]][seq_len(c$n[x])]) # collect the position vector for each group
-
-df$position = unlist(l) # add the new position variable to the dataset
-
-```
 ***
 
 # Basic harvest plot
@@ -201,6 +176,35 @@ Here, we have a few more variables, as defined below:
 - **cs_category**: Exposure or category of studies to be compared, which will be placed in separate rows<br>
 <br><br>
 
+## Postion
+
+An alternative to manually specifying the position of observations in the harvest plot is to use some code. The example below works with this data and can be adapted as necessary.
+
+```{r}
+
+data_harvest = data_harvest %>%
+  group_by(cs_category, direction_effect, outcome_mode) %>% # group by column variable (and row variables if you're using them)
+  arrange(desc(quality), desc(stat_sig), desc(n_interventions), .by_group = TRUE) # sort by quality measures in order of precedence
+
+c = count(data_harvest, direction_effect, outcome_mode,cs_category, .drop = TRUE) # count the number of studies in each group
+
+n = max(c$n) # number of studies in the group with the most studies
+
+v = c(0, rep(1:n, each = 2, length.out = n-1)) * c(-1, 1) + floor(n/2) # creates a position vector starting in the middle and working out for "No change" column
+
+c = left_join(c,
+              tibble(
+                direction_effect = c("Decrease", "No change" ,"Increase"),
+                order = list(seq_len(n),
+                             v[seq_len(n)],
+                             seq(n,1,-1)))
+) # joins the correct position vector to each group
+
+l = lapply(seq_len(nrow(c)), function(x) c$order[[x]][seq_len(c$n[x])]) # collect the position vector for each group
+
+data_harvest$position = unlist(l) # add the new position variable to the dataset
+
+```
 
 ## Creating separate plots for each outcome
 
